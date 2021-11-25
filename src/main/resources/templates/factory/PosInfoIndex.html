@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<style type="text/css">
+    .layui-table-cell{
+        height: auto!important;
+        white-space: normal;
+    }
+</style>
+<head>
+    <meta charset="UTF-8">
+    <title>记录信息</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" type="text/css" href="layui/css/layui.css" th:href="@{/layui/css/layui.css}" />
+    <link rel="stylesheet" type="text/css" href="css/info.css" th:href="@{/css/info.css}"/>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+            <div class="user_table_div">
+                <div id="searchParam">
+                    <form>
+                        <div class="layui-row" style="width: 1200px; border: #cccccc 1px solid;">
+                        <div class="factoryinfo-form layui-col-md10">
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label">SN/KSN/CSN/版号/机号=</label>
+                                <div class="factoryinfo-input-block">
+                                <input type="text" id="username" name="username" class="factoryinfo-input" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label" style="padding-right: 3px">外包厂 </label>
+                                <div class="factoryinfo-input-block">
+                                    <select name="factoryname" id="factoryname" class="factoryinfo-input">
+                                        <option value="0">请您选择</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label">生产日期>=</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="StartTime" id="StartTime" readonly="readonly" autocomplete="off"  class="factoryinfo-input">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label">生产日期<=</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="EndTime" id="EndTime" readonly="readonly" autocomplete="off"  class="factoryinfo-input">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label">工单单号=</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="title" lay-verify="title" autocomplete="off"  class="factoryinfo-input">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label" style="padding-right: 3px">机型</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="title" lay-verify="title" autocomplete="off"  class="factoryinfo-input">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label">产品编号=</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="title" lay-verify="title" autocomplete="off" class="factoryinfo-input">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label">软件编码=</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="title" lay-verify="title" autocomplete="off" class="factoryinfo-input">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label" style="padding-right: 3px">固件版本</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="title" lay-verify="title" autocomplete="off" class="factoryinfo-input">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label" style="padding-right: 3px">特性代码</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="title" lay-verify="title" autocomplete="off" class="factoryinfo-input">
+                                </div>
+                            </div>
+                            <div class="factoryinfo-form-item">
+                                <label class="factoryinfo-label">CCID=</label>
+                                <div class="factoryinfo-input-block">
+                                    <input type="text" name="title" lay-verify="title" autocomplete="off" class="factoryinfo-input">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-col-md2" style=" display: inline-block; height: 66px;padding-top: 15px; text-align: center">
+                            <button class="layui-btn" onclick="search()" id="search">查询</button>
+                        </div>
+                    </div>
+                </form>
+                    <table class="layui-hide" id="posinfo" lay-filter="posinfo" ></table>
+                </div>
+
+            </div>
+        </div>
+</div>
+</body>
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/jquery.min.js}"></script>
+<!-- Layui Js -->
+<script type="text/javascript" src="layui/layui.js" th:src="@{/layui/layui.js}"></script>
+<!-- Jqarticle Js -->
+<script type="text/javascript" src="js/jparticle.min.js" th:src="@{/js/jparticle.min.js}"></script>
+<!-- ZylVerificationCode Js-->
+<script type="text/javascript" src="js/zylVerificationCode.js" th:src="@{/js/zylVerificationCode.js}"></script>
+<script>
+    var tableIns1;
+    layui.use(['table','form','laydate'],function (){
+        var table=layui.table;
+        var form=layui.form;
+        var laydate=layui.laydate;
+        SetFactory();
+        tableIns1=table.render({
+            elem:'#posinfo'
+            ,url:'/room/roomlist'
+            ,page:true
+            ,cols:[
+                [
+                     {field: 'id', title: 'ID', width: 80, sort: true, fixed: 'left'}
+                    , {field: 'name', title: '外包厂'}
+                    , {field: 'row', title: '工单单号'}
+                    , {field: 'col', title: '生产日期'}
+                    , {field: 'total', title: 'SN'}
+                    , {field: 'remainSeat', title: '机型',}
+                    ,{fixed: 'right', title:'产品编码'}
+                    ,{fixed: 'right', title:'特性代码'}
+                    ,{fixed: 'right', title:'软件编码'}
+                    ,{fixed: 'right', title:'固件版本'}
+                    ,{fixed: 'right', title:'CCID'}
+                ]
+            ]
+        });
+        form.on('select(factoryname)',function (res) {
+            console.log(res);
+        })
+        laydate.render({
+            elem: '#StartTime'
+        });
+        laydate.render({
+            elem: '#EndTime'
+        });
+        function SetFactory(){
+
+            $.ajax({
+                url:"/factory/factoryname",
+                cache:false,
+                async:false,
+                type:"get",
+                dataType:"json",
+                success:function (data){
+                    console.log(data);
+                    var ulHtml;
+                    if(data.code==0) {
+                        $.each(data.data, function (index, value) {
+                            if (ulHtml == null)
+                                ulHtml = '<option value="' + value.id + '">' + value.name + '</option>';
+                            else
+                                ulHtml += '<option value="' + value.id + '">' + value.name + '</option>';
+                        });
+                        console.log(ulHtml);
+                        $('#factoryname').append(ulHtml);
+                    }
+                },
+                error:function ()
+                {
+
+                }
+            });
+        }
+    })
+</script>
+</html>

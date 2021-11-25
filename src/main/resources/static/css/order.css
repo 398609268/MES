@@ -1,0 +1,26 @@
+.help-block{
+    color: #999;
+    font-size: 12px;
+}
+.label-required-next:after {
+    top: 6px;
+    right: 5px;
+    color: red;
+    content: '*';
+    position: absolute;
+    margin-left: 4px;
+    font-weight: 700;
+    line-height: 1.8em;
+}
+
+.box-between {
+    display: flex;
+    margin-top: 5px;
+    margin-bottom: 3px;
+}
+
+.box-between .box-between-item {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+}

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>POS信息</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" type="text/css" href="layui/css/layui.css" th:href="@{/layui/css/layui.css}" />
+    <link rel="stylesheet" type="text/css" href="css/login.css" th:href="@{/css/login.css}"/>
+    <link rel="stylesheet" href="zTree/demo.css" th:href="@{/zTree/demo.css}"/>
+    <link rel="stylesheet" href="/zTree/metroStyle/metroStyle.css"/>
+    <link rel="stylesheet" type="text/css" href="css/info.css" th:href="@{/css/order.css}"/>
+</head>
+<body>
+<div class="panel panel-default operation_pos" hidden>
+    <div class="panel-heading title"></div>
+    <div class="layui-card-body">
+        <form class="layui-form " action="" lay-filter="deptInfo" style="margin-top: 10px">
+            <div class="layui-input-inline" style="vertical-align:text-top;">
+                <input type="text" name="id" hidden>
+            <div class="layui-form-item">
+                <label class="layui-form-label label-required-next">POS名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="posType" lay-verify="content" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label label-required-next">PN头</label>
+                <div class="layui-input-block">
+                    <input type="text" name="pnheader" lay-verify="content" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label label-required-next">SN头</label>
+                <div class="layui-input-block">
+                    <input type="text" name="snheader"  lay-verify="content"  autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            </div>
+            <div class="layui-input-inline" style="vertical-align:text-top;">
+            <div class="layui-form-item">
+                <label class="layui-form-label">卡控信息</label>
+                <div class="layui-input-block">
+                    <div class="layui-input-inline">
+                        <div id="CheckInfoTree" class="ztree"></div>
+                    </div>
+                    <div class="layui-input-inline">
+                    <button type="button" class="layui-btn" data-method="setCheckInfo">编辑</button>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button id="update" type="update" class="layui-btn" lay-submit="" lay-filter="update">保存修改</button>
+                    <button id="submit" type="submit" class="layui-btn" lay-submit="" lay-filter="submit">添加</button>
+                    <button class="layui-btn layui-btn-primary" id="btn_cancel">返回</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-fluid">
+            <div class="user_table_div">
+                <table class="layui-hide" id="posConfig" lay-filter="posConfig" ></table>
+            </div>
+
+</div>
+<div id="CheckInfoTrees" class="ztree" style="display: none"></div>
+</body>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs btn-auth-controller" lay-event="detail" id="1018" >详细信息</a>
+    <a class="layui-btn layui-btn-xs btn-auth-controller" lay-event="edit" id="1019" >修改</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs btn-auth-controller" lay-event="del" id="1020">删除</a>
+</script>
+<script type="text/html" id="toolbar">
+    <div class="layui-btn-container" hidden>
+        <button class="layui-btn layui-btn-sm btn-auth-controller" lay-event="addNewPos" id="1021">添加机型</button>
+        <button class="layui-btn layui-btn-sm btn-auth-controller" lay-event="DeletedTypes" id="1022">删除机型</button>
+    </div>
+</script>
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/jquery.min.js}"></script>
+<!-- Layui Js -->
+<script type="text/javascript" src="layui/layui.js" th:src="@{/layui/layui.js}"></script>
+<!-- Jqarticle Js -->
+<script type="text/javascript" src="js/jparticle.min.js" th:src="@{/js/jparticle.min.js}"></script>
+<!-- ZylVerificationCode Js-->
+<script type="text/javascript" src="js/zylVerificationCode.js" th:src="@{/js/zylVerificationCode.js}"></script>
+
+<script type="text/javascript" th:src="@{/js/ztree/jquery.ztree.core.js}"></script>
+<script type="text/javascript" th:src="@{/js/ztree/jquery.ztree.excheck.js}"></script>
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/base/common.js}"></script>
+<script>
+    var tableIns1;
+    layui.use(['table','layer','tree','form','layedit'],function (){
+        var table=layui.table;
+        var $=layui.$;
+        var layer=layui.layer;
+        var tree=layui.tree;
+        var form=layui.form;
+        var setting = {
+            view: {
+                showLine: true,
+                selectedMulti: false
+            },
+            check: {
+                enable: false,
+            },
+            data: {
+                simpleData: {
+                    enable: true,//是否采用简单数据模式
+                    idKey: "id",//树节点ID名称
+                    pIdKey: "pid",//父节点ID名称
+                    rootPId: -1,//根节点ID
+                }
+            },
+            callback: {
+                onClick: zTreeonClick,
+                //   onCheck: zTreeMethodOnCheck
+            }
+        }
+        var active={
+            setCheckInfo:function (){
+                layer.open({
+                    type: 2,
+                    skin: 'layui-layer-molv',
+                    title: '请设置配置',
+                    area: ['90%', '100%'],
+                    shade: 0,
+                    shadeClose: false,
+                    content:'/pos/SetStation',
+                    btn:['确认','取消'],
+                    yes:function (index,layero){
+                        var iframeWin = window[layero.find('iframe')[0]['name']].$("#StationTree").contents();
+                        var ztree = iframeWin.zTree.getZTreeObj("StationTree");
+                        if(ztree!=null) {
+                           var nodes = ztree.getNodes(true);
+                            console.log(nodes);
+                            $.fn.zTree.init($("#CheckInfoTree"), setting, nodes);
+                        }
+                        layer.close(index);
+                    }
+                });
+            }
+        }
+        form.verify({
+            content: function(value){
+                if(value.length <= 0){
+                    return '存在数据未填写';
+                }
+            }
+        });
+        tableIns1=table.render({
+            elem:'#posConfig'
+            ,url:'/pos/posInfo'
+            ,page:true
+            ,cols:[
+                [
+                    {type: 'checkbox'}
+                    ,{field: 'id',hide: true}
+                    , {field: 'posType', title: '名称'}
+                    ,{field: 'pnheader', title:'PN头'}
+                    ,{field: 'snheader', title:'SN头'}
+                    ,{fixed: 'right', title:'操作', toolbar: '#barDemo'}
+                ]
+            ]
+            , toolbar: '#toolbar'
+            ,parseData: function(res){ //将原始数据解析成 table 组件所规定的数据，res为从url中get到的数据
+                console.log(res);
+                var result;
+                if(this.page.curr){
+                    result = res.data.slice(this.limit*(this.page.curr-1),this.limit*this.page.curr);
+                }
+                else{
+                    result=res.data.slice(0,this.limit);
+                }
+                return {
+                    "code": res.code, //解析接口状态
+                    "msg": res.msg, //解析提示文本
+                    "count": res.data.length, //解析数据长度
+                    "data": result //解析数据列表
+                };
+            },
+            done:function (res, curr, count){
+                getAuth(57);
+            }
+        });
+
+        table.on('toolbar(posConfig)',function (obj){
+            switch (obj.event)
+            {
+
+                case 'addNewPos':
+                    $.fn.zTree.init($("#CheckInfoTree"), setting, null);
+                    $("#update").hide();
+                    $("#submit").show();
+                    $(".user_table_div").hide();
+                    $(".operation_pos").show();
+                    break;
+                case 'DeletedTypes':
+                    var posNameList="";
+                    var checkStatus = table.checkStatus(obj.config.id);
+                    var data = checkStatus.data;
+                    if (data.length == 0) {
+                        layer.msg("请选择要批量删除的列");
+                    } else {
+                        var Ids = [];
+                        $(data).each(function (index, item) {
+                            Ids.push(item.id);
+                           posNameList+=item.posType;
+                            posNameList+=",";
+                        });
+                        DelDialog(Ids, posNameList);
+                    }
+                    break;
+            }
+        });
+        table.on('tool(posConfig)',function (obj){
+            var data=obj.data;
+            switch(obj.event){
+                case 'detail':
+                    var nodes=InitCheckDataTree(data.id);
+                    $.fn.zTree.init($("#CheckInfoTrees"), setting, nodes);
+                    layer.open({
+                        type: 1,
+                        skin: 'layui-layer-molv',
+                        title: "选择POS机型",
+                        area: ['400px', '450px'],
+                        shade: 0,
+                        shadeClose: false,
+                        content:jQuery('#CheckInfoTrees'),
+                        btn:['确认','取消'],
+                        yes:function (index){
+
+                            layer.close(index);
+                        }
+                    });
+
+
+                    break;
+                case 'edit':
+                    var nodes=InitCheckDataTree(data.id);
+                    $.fn.zTree.init($("#CheckInfoTree"), setting, nodes);
+                    $(".operation_pos input[name=id]").val(data.id);
+                    $(".operation_pos input[name=posType]").val(data.posType);
+                    $(".operation_pos input[name=pnheader]").val(data.pnheader);
+                    $(".operation_pos input[name=snheader]").val(data.snheader);
+                    $("#update").show();
+                    $("#submit").hide();
+                    $(".user_table_div").hide();
+                    $(".operation_pos").show();
+                    break;
+                case 'del':
+                    var Ids=[];
+                    Ids.push(data.id);
+                    DelDialog(Ids,data.posType);
+                    break;
+            };
+        });
+        $('.layui-btn').on('click', function(){
+            var othis = $(this), method = othis.data('method');
+            active[method] ? active[method].call(this, othis) : '';
+        });
+        form.on('submit(submit)', function(data){
+            var tree=$.fn.zTree.getZTreeObj("CheckInfoTree");
+            var nodelist=null;
+            if(tree!=null)
+                 nodelist=tree.getNodes();
+
+            var PosDetailInfo={
+                "PosData":data.field,
+                "CheckData":nodelist
+            };
+       //     console.log(dataList);
+            var ret=SendAjax("/pos/add",PosDetailInfo,"POST");
+            if(ret==false) {
+                layer.msg("添加机型失败...");
+                return false;
+            }else return true;
+        });
+        form.on('submit(update)', function(data){
+            var tree=$.fn.zTree.getZTreeObj("CheckInfoTree");
+            var nodelist=null;
+            if(tree!=null)
+                nodelist=tree.getNodes();
+            console.log(data);
+            var PosDetailInfo={
+                "PosData":data.field,
+                "CheckData":nodelist
+            };
+            //     console.log(dataList);
+            var ret=SendAjax("/pos/update",PosDetailInfo,"POST");
+            if(ret==false) {
+                layer.msg("更新机型失败...");
+                return false;
+            }else return true;
+        });
+        var DelDialog = function (userIds, username) {
+            layer.open({
+                content:"确定要删除"+username+"么",
+                yes:function (index)
+                {
+                    layer.close(index);
+                    SendAjax("/pos/delete",userIds,"DELETE");
+                    tableIns1.reload({
+                        page: {
+                            curr:1
+                        }
+                    });
+                }
+            })
+        }
+    });
+
+</script>
+</html>

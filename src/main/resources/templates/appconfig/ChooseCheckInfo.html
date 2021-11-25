@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>POS信息</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" type="text/css" href="layui/css/layui.css" th:href="@{/layui/css/layui.css}" />
+    <link rel="stylesheet" type="text/css" href="css/login.css" th:href="@{/css/login.css}"/>
+    <link rel="stylesheet" href="zTree/demo.css" th:href="@{/zTree/demo.css}"/>
+    <link rel="stylesheet" href="/zTree/metroStyle/metroStyle.css"/>
+    <link rel="stylesheet" type="text/css" href="css/info.css" th:href="@{/css/order.css}"/>
+</head>
+<body>
+<form class="layui-form operation_app">
+    <div id="id" th:text="${id}" hidden></div>
+    <div id="posname" th:text="${posname}" hidden></div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label label-required-next">应用名称</label>
+            <div class="layui-input-inline" style="width: 200px;">
+                <input type="text" id="appName" name="appName" lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+    </div>
+
+<div class="layui-form-item">
+    <label class="layui-form-label">机型</label>
+    <div class="layui-input-block" style="width: 400px">
+        <select name="posType" id="posType" lay-filter="posType">
+            <option value="">请选择</option>
+
+        </select>
+    </div>
+</div>
+    <div class="content_wrap">
+        <div class="zTreeDemoBackground">
+            <ul id="treeChoose" class="ztree"></ul>
+        </div>
+    </div>
+    <button id="submit" type="submit" class="layui-btn" lay-submit="" lay-filter="submit">保存并前往下一项</button>
+    <button id="update" type="submit" class="layui-btn" lay-submit="" lay-filter="update">更新并前往下一项</button>
+</form>
+<div id="DataTypeTree" class="ztree" style="display: none"></div>
+</body>
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/jquery.min.js}"></script>
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/base/common.js}"></script>
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/base/pinhao.js}"></script>
+<!-- Layui Js -->
+<script type="text/javascript" src="layui/layui.js" th:src="@{/layui/layui.js}"></script>
+<!-- Jqarticle Js -->
+<script type="text/javascript" src="js/jparticle.min.js" th:src="@{/js/jparticle.min.js}"></script>
+<!-- ZylVerificationCode Js-->
+<script type="text/javascript" src="js/zylVerificationCode.js" th:src="@{/js/zylVerificationCode.js}"></script>
+<script type="text/javascript" th:src="@{/js/ztree/jquery.ztree.core.js}"></script>
+<script type="text/javascript" th:src="@{/js/ztree/jquery.ztree.excheck.js}"></script>
+<script type="text/javascript" th:src="@{/js/ztree/jquery.ztree.exedit.js}"></script>
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/base/common.js}"></script>
+<script>
+    layui.use(['transfer','form', 'layer', 'util'], function(){
+        var form=layui.form;
+        var transfer=layui.transfer;
+        var layer=layui.layer;
+        var nodes;
+        var setting = {
+            edit: {
+                enable: true,
+                showRemoveBtn: false,
+                showRenameBtn: false
+            },
+            data: {
+                simpleData: {
+                    enable: true
+                }
+            },
+            callback: {
+                beforeDrag: beforeDrag,
+                beforeDrop: beforeDrop
+            }
+        };
+        var setting2 = {
+            view: {
+                showLine:false,
+                selectedMulti: false,
+                addHoverDom: addHoverDom,
+                removeHoverDom: removeHoverDom
+            },
+
+            edit : {
+                enable : true,
+                showRemoveBtn: showRemoveBtn,
+                showRenameBtn:false,
+                removeTitle : "删除节点",
+
+            },
+            data: {
+                simpleData: {
+                    enable: true,//是否采用简单数据模式
+                    idKey: "id",//树节点ID名称
+                    pIdKey: "pid",//父节点ID名称
+                    rootPId: -1,//根节点ID
+                }
+            },
+            callback: {
+                beforeDrag: beforeDrag,
+                beforeDrop: beforeDrop
+            }
+        };
+        var setting3 = {
+            view: {
+                showLine: true,
+                selectedMulti: true
+            },
+            check: {
+                enable: true,
+            },
+            data: {
+                simpleData: {
+                    enable: true,//是否采用简单数据模式
+                    idKey: "id",//树节点ID名称
+                    pIdKey: "pid",//父节点ID名称
+                    rootPId: -1,//根节点ID
+                }
+            },
+            callback: {
+                onClick: zTreeonClick,
+                //   onCheck: zTreeMethodOnCheck
+            }
+        }
+        $(document).ready(function(){
+            var id=$('#id').text();
+            InitSelect();
+            if(id.length>0)
+                InitForUpdate(id);
+            else{
+                $("#update").hide();
+                $("#submit").show();
+            }
+       //     InitTree();
+        });
+        function InitForUpdate(id){
+            $('#appName').val(id);
+            $('#appName').attr("readonly","readonly");
+            $("#posType option:contains('"+$('#posname').text()+"') ").prop("selected",true);
+          form.render();
+            var url="/appconfig/GetPinHaoItem?appName="+id;
+            var res=SendAjaxNoData(url,'GET');
+            $.fn.zTree.init($("#treeChoose"), setting2,MakeDataToTreeNodes(res.data));
+            $("#update").show();
+            $("#submit").hide();
+        }
+
+        function InitSelect(){
+            $.ajax({
+                url:'/pos/posInfo',
+                cache:false,
+                async:false,
+                type:'GET',
+                success:function (res)
+                {
+                        var select = document.getElementById('posType');
+                    if (res.data != null || res.data.size() > 0) {
+                        for (var c in res.data) {
+                            var option = document.createElement("option");
+                            option.setAttribute("value", res.data[c].id);
+                            option.innerText = res.data[c].posType;
+                            select.appendChild(option);
+                        }
+                    };
+                    form.render('select');
+
+                },
+                error:function (res)
+                {
+                    console.log("数据获取失败"+res);
+                }
+            })
+
+        }
+        form.on('select(posType)',function (res) {
+            InitTree(res.value);
+        })
+
+        function InitTree(id){
+            if(id!='')
+            nodes=InitCheckDataTree(id);
+            else nodes=null;
+            $.fn.zTree.init($("#treeChoose"), setting2,nodes);
+        }
+        function beforeDrag(treeId, treeNodes) {
+            for (var i=0,l=treeNodes.length; i<l; i++) {
+                if (treeNodes[i].drag === false) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        function beforeDrop(treeId, treeNodes, targetNode, moveType) {
+            if(treeNodes[0].pId==null && targetNode!=null) return false;
+            return targetNode ? targetNode.drop !== false : true;
+        }
+        var loadDataTypeTreeTree=function (data,pid,node){
+
+            $.fn.zTree.init($("#DataTypeTree"), setting3, data);//初始化树节点时，添加同步获取的数据
+            layer.open({
+                type: 1,
+                skin: 'layui-layer-molv',
+                title: "选择卡控内容",
+                area: ['50%', '80%'],
+                shade: 0,
+                shadeClose: false,
+                content:$('#DataTypeTree'),
+                btn:['确认','取消'],
+                yes:function (index){
+                    var zTree = $.fn.zTree.getZTreeObj("treeChoose");
+                    var TreeNode=getTreeNode('DataTypeTree',pid);
+
+                    $.each(TreeNode,function (inde,value){
+
+                        zTree.addNodes(node, {id:value.id, pId:value.pid,parent: false, name:value.name});
+                    })
+
+                    layer.close(index);
+                }
+            });
+        }
+        function addHoverDom(treeId, treeNode) {
+            var sObj = $("#" + treeNode.tId + "_span");
+            if (treeNode.editNameFlag || $("#addBtn_"+treeNode.tId).length>0 || treeNode.parent==false) return;
+            var addStr = "<span class='button add' id='addBtn_" + treeNode.tId
+                + "' title='add node' onfocus='this.blur();'></span>";
+            sObj.after(addStr);
+            var btn = $("#addBtn_"+treeNode.tId);
+            if (btn) btn.bind("click", function(){
+                var ignoreNode=treeNode.children;
+                var ignoreList=new Array();
+                $.each(ignoreNode,function (index,value){
+                    ignoreList.push(value.id);
+                })
+                loadDataTypeTreeTree(InitDataTypeTree(ignoreList),treeNode.id,treeNode);
+                return false;
+            });
+        };
+        function removeHoverDom(treeId, treeNode) {
+            if(treeNode.parent==true) return;
+            $("#addBtn_"+treeNode.tId).unbind().remove();
+        };
+        function showRemoveBtn(treeId, treeNode) {
+            return !treeNode.parent;
+        }
+        form.verify({
+            required: function(value){
+                if(value.length <= 0){
+                    return '存在数据未填写';
+                }
+            }
+        });
+        form.on('submit(submit)', function(data){
+            var tree=$.fn.zTree.getZTreeObj("treeChoose");
+            var nodelist=null;
+            if(tree!=null)
+                nodelist=tree.getNodes();
+            var appName=$(".operation_app input[name=appName]").val();
+            var posname=$("#posType option:selected").text(),
+            posvalue=$("#posType option:selected").val();
+            if (posvalue=="") posname="";
+            var PosDetailInfo={
+                "appName":appName,
+                "posname":posname,
+                "CheckData":nodelist
+            };
+            //     console.log(dataList);
+            var ret=SendAjax("/appconfig/add",PosDetailInfo,"POST");
+            if(ret==false) {
+                layer.msg("添加机型失败...");
+                return false;
+            }else {
+                window.location.href='http://localhost:8000/appconfig/SetCheckMethodIndex?appName='+appName;
+               return false ;
+            }
+
+        });
+        form.on('submit(update)', function(data){
+            var tree=$.fn.zTree.getZTreeObj("treeChoose");
+            var nodelist=null;
+            if(tree!=null)
+                nodelist=tree.getNodes();
+            var appName=$(".operation_app input[name=appName]").val();
+            var posname=$("#posType option:selected").text(),
+                posvalue=$("#posType option:selected").val();
+            if (posvalue=="") posname="";
+            var PosDetailInfo={
+                "appName":appName,
+                "posname":posname,
+                "CheckData":nodelist
+            };
+            //     console.log(dataList);
+            var ret=SendAjax("/appconfig/update",PosDetailInfo,"POST");
+            if(ret==false) {
+                layer.msg("添加机型失败...");
+                return false;
+            }else {
+                window.location.href='http://localhost:8000/appconfig/SetCheckMethodIndex?appName='+appName;
+                return false ;
+            }
+
+        });
+        //console.log(info);
+        var active={
+            getData:function (){
+                var getData = transfer.getData('checkdata'); //获取右侧数据
+                layer.alert(JSON.stringify(getData));
+            }
+        }
+        $('.layui-btn').on('click', function(){
+            var othis = $(this), method = othis.data('method');
+            active[method] ? active[method].call(this, othis) : '';
+        });
+
+    })
+</script>

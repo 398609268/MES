@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<style type="text/css">
+    .layui-table-cell{
+        height: auto!important;
+        white-space: normal;
+    }
+</style>
+<head>
+    <meta charset="UTF-8">
+    <title>记录信息</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" type="text/css" href="layui/css/layui.css" th:href="@{/layui/css/layui.css}" />
+    <link rel="stylesheet" type="text/css" href="css/login.css" th:href="@{/css/login.css}"/>
+    <link rel="stylesheet" href="zTree/demo.css" th:href="@{/zTree/demo.css}"/>
+    <link rel="stylesheet" href="/zTree/metroStyle/metroStyle.css"/>
+
+</head>
+<body>
+<div class="panel panel-default operation_order" hidden>
+    <div class="panel-heading title"></div>
+    <div class="layui-card-body">
+        <form class="layui-form " action="" lay-filter="deptInfo" style="width: 700px;margin-top: 10px">
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">站位名称</label>
+                <div class="layui-input-block">
+                    <input type="stationid" name="stationid"hidden>
+                    <input type="stationname" name="stationname" lay-verify="title" placeholder="请输入站位名称" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">POS类型</label>
+                <div class="layui-input-block">
+                    <input type="PosType" name="PosType" placeholder="请选择POS类型" lay-verify="title" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">卡控项目</label>
+                <div class="layui-input-block">
+                    <input type="DataType" name="DataType" placeholder="请选择卡控项目" lay-verify="title" autocomplete="off" class="layui-input">
+                    <input type="DataTypeId" name="DataTypeId" hidden>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">卡控方法</label>
+                <div class="layui-input-block">
+                    <input type="checkMethod" name="checkMethod" placeholder="请选择支持的卡控方法" lay-verify="title" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button id="update" type="update" class="layui-btn" lay-submit="" lay-filter="update">保存修改</button>
+                    <button id="submit" type="submit" class="layui-btn" lay-submit="" lay-filter="submit">添加</button>
+                    <button class="layui-btn layui-btn-primary" id="btn_cancel">返回</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-fluid">
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-sm12 layui-col-md8 layui-col-lg10">
+            <div class="user_table_div">
+                <table class="layui-hide" id="station" lay-filter="station" ></table>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="PosTypeTree" class="ztree" style="display: none"></div>
+<div id="StationNameTree" class="ztree" style="display: none"></div>
+<div id="DataTypeTree" class="ztree" style="display: none"></div>
+<div id="CheckMethodDisPlay" class="ztree" style="display: none"></div>
+
+</body>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs btn-auth-controller" lay-event="edit" id="1002" >修改</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs btn-auth-controller" lay-event="del" id="1003">删除</a>
+</script>
+<script type="text/html" id="toolbar">
+    <div class="layui-btn-container" hidden>
+        <button class="layui-btn layui-btn-sm btn-auth-controller" lay-event="addNewType" id="1000">添加站位</button>
+        <button class="layui-btn layui-btn-sm btn-auth-controller" lay-event="DeletedTypes" id="1001">删除站位</button>
+    </div>
+</script>
+
+
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/jquery.min.js}"></script>
+<!-- Layui Js -->
+<script type="text/javascript" src="layui/layui.js" th:src="@{/layui/layui.js}"></script>
+<!-- Jqarticle Js -->
+<script type="text/javascript" src="js/jparticle.min.js" th:src="@{/js/jparticle.min.js}"></script>
+<!-- ZylVerificationCode Js-->
+<script type="text/javascript" src="js/zylVerificationCode.js" th:src="@{/js/zylVerificationCode.js}"></script>
+
+<script type="text/javascript" th:src="@{/js/ztree/jquery.ztree.core.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/ztree/jquery.ztree.excheck.min.js}"></script>
+<script>
+    var tableIns1;
+    layui.use(['table','layer','tree','form','layedit'],function (){
+        var table=layui.table;
+        var $=layui.$;
+        var layer=layui.layer;
+        var tree=layui.tree;
+        var form=layui.form;
+        var PosType,StationName,StationId,DataTypes,DataTypeId;
+        var MethodId;
+        InitPosTree();
+        InitStationNameTree();
+        var loadDataTypeTreeTree=function (data){
+            var setting = {
+                view: {
+                    selectedMulti: true
+                },
+                check: {
+                    enable: true,
+                },
+                data: {
+                    simpleData: {
+                        enable: true,//是否采用简单数据模式
+                        idKey: "id",//树节点ID名称
+                        pIdKey: "pid",//父节点ID名称
+                        rootPId: -1,//根节点ID
+                    }
+                },
+                callback: {
+                    onClick: zTreeonClick,
+                    onCheck:zTreeOnCheck
+                }
+            };
+            var v=$(".operation_order input[name=DataTypeId]").val();
+            if(v!=null || v!=""){
+                var ids=v.split(",");
+                for(var i=0;i<data.length;i++){
+                    if(ids.includes(data[i].id.toString())){
+                        data[i].checked=true;
+                    }
+                }
+            }
+            $.fn.zTree.init($("#DataTypeTree"), setting, data);//初始化树节点时，添加同步获取的数据
+        }
+        var loadPosTypeTree = function (data)
+        {
+            var setting = {
+                view: {
+                    selectedMulti: false
+                },
+                check: {
+                    enable: false,
+                },
+                data: {
+                    simpleData: {
+                        enable: true,//是否采用简单数据模式
+                        idKey: "id",//树节点ID名称
+                        pIdKey: "pid",//父节点ID名称
+                        rootPId: -1,//根节点ID
+                    }
+                },
+                callback: {
+                    onClick: zTreeonClick
+                }
+            };
+
+            $.fn.zTree.init($("#PosTypeTree"), setting, data);//初始化树节点时，添加同步获取的数据
+        }
+        var loadStationNameTreeTree = function (data)
+        {
+            var setting = {
+                view: {
+                    selectedMulti: false
+                },
+                check: {
+                    enable: false,
+                },
+                data: {
+                    simpleData: {
+                        enable: true,//是否采用简单数据模式
+                        idKey: "id",//树节点ID名称
+                        pIdKey: "pid",//父节点ID名称
+                        rootPId: -1,//根节点ID
+                    }
+                },
+                callback: {
+                    onClick: zTreeonClick
+                }
+            };
+
+            $.fn.zTree.init($("#StationNameTree"), setting, data);//初始化树节点时，添加同步获取的数据
+        }
+        function getAuth(){
+            var list=new Array();
+            $.ajax({
+                url:"/operation/ids?id=50",
+                cache:false,
+                async:false,
+                type:"get",
+                success:function (res)
+                {
+                   if(res.code==0){
+                        for(var i=0;i<res.data.length;i++){
+                            list.push(res.data[i].toString());
+                        }
+
+                   }
+                },
+                error:function (res)
+                {
+                    console.log("数据获取失败"+res);
+                }
+            })
+            $(".layui-btn-container").show();
+            $(".btn-auth-controller").each(function (){
+                var perm_this=$(this);
+                perm_this.hide();
+                if(list.length>0){
+                    if(list.indexOf(perm_this.attr("id"))>=0) {
+                        perm_this.show();
+                    }
+                }
+            })
+        }
+        function InitPosTree()
+        {
+            $.ajax({
+                url:"/pos/postype",
+                cache:false,
+                async:true,
+                type:"get",
+                dataType:"json",
+                success:function (res)
+                {
+                    loadPosTypeTree(res.data);
+                },
+                error:function (res)
+                {
+                    console.log("数据获取失败"+res);
+                }
+            })
+        }
+        function InitStationNameTree()
+        {
+            $.ajax({
+                url:"/station/name",
+                cache:false,
+                async:true,
+                type:"get",
+                dataType:"json",
+                success:function (res)
+                {
+                    loadStationNameTreeTree(res.data);
+                },
+                error:function (res)
+                {
+                    console.log("数据获取失败"+res);
+                }
+            })
+        }
+        function InitDataTypeTree()
+        {
+            $.ajax({
+                url:"/station/dataType",
+                cache:false,
+                async:true,
+                type:"get",
+                dataType:"json",
+                success:function (res)
+                {
+                    loadDataTypeTreeTree(res.data);
+                },
+                error:function (res)
+                {
+                    console.log("数据获取失败"+res);
+                }
+            })
+        }
+
+        function InitMethodTable(){
+            if( $(".operation_order input[name=DataType]").val()=='' ||  $(".operation_order input[name=DataType]").val()==null)
+                return;
+
+            var dataType=$(".operation_order input[name=DataType]").val().split(',');
+            var uHtml="";
+            var result=[];
+
+            var v=$(".operation_order input[name=checkMethod]").val();
+
+                for (var i = 0; i < dataType.length; i++) {
+                    if (dataType[i] != "" && dataType[i] != null) {
+                        var data = [
+                            {id: 1, pid: 1000 + i, name: "固定值", open: false},
+                            {id: 2, pid: 1000 + i, name: "范围值", open: false},
+                            {id: 3, pid: 1000 + i, name: "按表卡控", open: false},
+                        ]
+                        if(v!=null && v!=""){
+                            var ids=v.split("/");
+                            var index=ids[i].split(",");
+                            for(var j=0;j<index.length;j++){
+                                if(index[j]!=null && index[j]!="" && index[j]!=0){
+                                    data[index[j]-1].checked=true;
+                                }
+                            }
+                        }
+                        var tmp = {id: 1000 + i, pid: 0, name: dataType[i], open: true};
+                        result.push(tmp);
+                        for (var n = 0; n < data.length; n++) {
+                            result.push(data[n]);
+                        }
+                    }
+                }
+
+            var setting = {
+                view: {
+                    selectedMulti: true
+                },
+                check: {
+                    enable: true,
+                },
+                data: {
+                    simpleData: {
+                        enable: true,//是否采用简单数据模式
+                        idKey: "id",//树节点ID名称
+                        pIdKey: "pid",//父节点ID名称
+                        rootPId: -1,//根节点ID
+                    }
+                },
+                callback: {
+                    onClick: zTreeonClick,
+                    onCheck: zTreeMethodOnCheck
+                }
+            };
+            $.fn.zTree.init($("#CheckMethodDisPlay"), setting, result);//初始化树节点时，添加同步获取的数据
+
+        }
+        tableIns1=table.render({
+            elem:'#station'
+            ,url:'/station/info'
+            ,page:true
+            ,cols:[
+                [
+                    {type: 'checkbox'}
+                    ,{field: 'stationId',hide: true}
+                    , {field: 'name', title: 'name'}
+                    ,{field: 'postype', title:'postype'}
+                    ,{field: 'checkInfo', title:'checkInfo'}
+                    ,{field: 'checkInfoId', hide:true}
+                    ,{field: 'checkmethods', title:'checkmethods'}
+                    ,{fixed: 'right', title:'操作', toolbar: '#barDemo'}
+                ]
+            ]
+            , toolbar: '#toolbar'
+            ,parseData: function(res){ //将原始数据解析成 table 组件所规定的数据，res为从url中get到的数据
+                var result;
+                if(this.page.curr){
+                    result = res.data.slice(this.limit*(this.page.curr-1),this.limit*this.page.curr);
+                }
+                else{
+                    result=res.data.slice(0,this.limit);
+                }
+                return {
+                    "code": res.code, //解析接口状态
+                    "msg": res.msg, //解析提示文本
+                    "count": res.count, //解析数据长度
+                    "data": result //解析数据列表
+                };
+            },
+            done:function (res, curr, count){
+                getAuth();
+            }
+        });
+        table.on('tool(station)',function (obj){
+            var data=obj.data;
+            switch(obj.event){
+                case 'edit':
+                    $("#submit").hide();
+                    $("#update").show();
+                    $(".user_table_div").hide();
+                    $(".operation_order").show();
+                    $(".operation_order input[name=stationname]").val(data.name);
+                    $(".operation_order input[name=PosType]").val(data.postype);
+                    $(".operation_order input[name=stationid]").val(data.stationid);
+                    $(".operation_order input[name=DataType]").val(data.checkInfo);
+                    $(".operation_order input[name=DataTypeId]").val(data.checkInfoId);
+                    $(".operation_order input[name=checkMethod]").val(data.checkmethods);
+                    $(".title").html("编辑站位");
+
+                    break;
+            };
+        });
+        table.on('toolbar(station)',function (obj){
+            switch (obj.event)
+            {
+
+                case 'addNewType':
+                    $("#update").hide();
+                    $("#submit").show();
+                    $(".user_table_div").hide();
+                    $(".operation_order").show();
+
+                    break;
+            }
+        });
+        form.verify({
+            title: function(value){
+                if(value.length <= 0){
+                    return '存在数据未填写';
+                }
+            }
+
+            ,content: function(value){
+                layedit.sync(editIndex);
+            }
+        });
+
+        form.on('submit(submit)', function(data){
+
+            var result
+            $.ajax({
+                url:"/station/insert",
+                cache:false,
+                async:false,
+                traditional: true,
+                data: JSON.stringify(data.field),
+                contentType: 'application/json; charset=UTF-8',
+                dataType: "json",
+                type:"POST",
+                success:function (res)
+                {
+                    result=res;
+                }
+
+            });
+
+            if(result.code!=0) {
+                return false;
+            }
+        });
+        form.on('submit(update)', function(data){
+
+            var result
+            $.ajax({
+                url:"/station/update",
+                cache:false,
+                async:false,
+                traditional: true,
+                data: JSON.stringify(data.field),
+                contentType: 'application/json; charset=UTF-8',
+                dataType: "json",
+                type:"POST",
+                success:function (res)
+                {
+                    result=res;
+                }
+
+            });
+
+            if(result.code!=0) {
+                layer.msg(result.data);
+                return false;
+            }
+        });
+        $(".operation_order input[name=PosType]").click(function () {
+            layer.closeAll();
+            PosType=null;
+            layer.open({
+                type: 1,
+                skin: 'layui-layer-molv',
+                title: "选择POS机型",
+                area: ['400px', '450px'],
+                shade: 0,
+                shadeClose: false,
+                content:jQuery('#PosTypeTree'),
+                btn:['确认','取消'],
+                yes:function (index){
+
+                    if(PosType!=null)
+                    {
+                        $(".operation_order input[name=PosType]").val(PosType);
+
+                    }
+                    layer.close(index);
+                }
+            });
+        });
+        $(".operation_order input[name=DataType]").click(function () {
+            layer.closeAll();
+            DataTypes=null;
+            DataTypeId=null;
+            InitDataTypeTree();
+            layer.open({
+                type: 1,
+                skin: 'layui-layer-molv',
+                title: "选择要卡控的数据",
+                area: ['400px', '450px'],
+                shade: 0,
+                shadeClose: false,
+                content:$('#DataTypeTree'),
+                btn:['确认','取消'],
+                yes:function (index){
+                    if(DataTypes!=null)
+                    {
+                        $(".operation_order input[name=checkMethod]").val("")
+                        $(".operation_order input[name=DataType]").val(DataTypes);
+                        $(".operation_order input[name=DataTypeId]").val(DataTypeId);
+                    }
+                    layer.close(index);
+                }
+            });
+        });
+        $(".operation_order input[name=stationname]").click(function () {
+            layer.closeAll();
+            StationName=null;
+            StationId=null;
+            layer.open({
+                type: 1,
+                skin: 'layui-layer-molv',
+                title: "选择站位名称",
+                area: ['400px', '450px'],
+                shade: 0,
+                shadeClose: false,
+                content:$('#StationNameTree'),
+                btn:['确认','取消'],
+                yes:function (index){
+                    if(StationName!=null)
+                    {
+                        $(".operation_order input[name=stationname]").val(StationName);
+                        $(".operation_order input[name=stationid]").val(StationId);
+                    }
+                    layer.close(index);
+                }
+            });
+        });
+        $(".operation_order input[name=checkMethod]").click(function () {
+            layer.closeAll();
+            if( $(".operation_order input[name=DataType]").val()=='') {
+                layer.msg("请先选择要卡控的数据");
+            }
+            else {
+                InitMethodTable();
+                StationName = null;
+                StationId = null;
+                layer.open({
+                    type: 1,
+                    skin: 'layui-layer-molv',
+                    title: "选择卡控方法",
+                    area: ['400px', '450px'],
+                    shade: 0,
+                    shadeClose: false,
+                    content: $('#CheckMethodDisPlay'),
+                    btn: ['确认', '取消'],
+                    yes: function (index) {
+                        if (MethodId != null) {
+                            $(".operation_order input[name=checkMethod]").val(MethodId);
+                        }
+                        layer.close(index);
+                    }
+                });
+            }
+        });
+        function zTreeBeforeClick(treeId, treeNode, clickFlag) {
+            return !treeNode.isParent;//当是父节点 返回false 不让选取
+        }
+        function zTreeonClick(e, treeId, treeNode) {
+
+            var treeObj = $.fn.zTree.getZTreeObj(e.data.treeId);
+            if (treeNode.isParent) {//如果不是叶子结点，结束
+                treeObj.expandNode(treeNode);
+                return;
+            } else {
+            if (e.data.treeId == "PosTypeTree")
+                PosType = treeNode.name;
+            else if (e.data.treeId == "StationNameTree") {
+                StationId=treeNode.id;
+                StationName = treeNode.name;
+            }
+            else if(e.data.treeId=="DataTypeTree" || e.data.treeId=="CheckMethodDisPlay")
+                treeObj.checkNode(treeNode,!treeNode.checked,true,true);
+
+
+        }
+
+        };
+        function zTreeMethodOnCheck() {
+            var treeObj = $.fn.zTree.getZTreeObj("CheckMethodDisPlay");
+            nodes=treeObj.getCheckedNodes(true);
+            var id=[];
+            for(var i=0;i<nodes.length;i++){
+                if(!nodes[i].isParent) {
+                    if(id[nodes[i].pid-1000]==null || id[nodes[i].pid-1000]==undefined)
+                    id[nodes[i].pid-1000]=(nodes[i].id).toString();
+                    else {
+                        id[nodes[i].pid - 1000] += ",";
+                        id[nodes[i].pid - 1000] += (nodes[i].id).toString();
+
+                    }
+                }
+            }
+            var tmp="";
+            for(var i=0;i<id.length;i++){
+                if(id[i]=="" ||id[i]==null){
+                    id[i]="0"
+                }
+                tmp+=id[i];
+                tmp+="/";
+            }
+            var len= $(".operation_order input[name=DataType]").val().split(",").length-1;
+            for(var i=id.length;i<len;i++){
+                tmp+="0/";
+            }
+            MethodId=tmp;
+        };
+        function zTreeOnCheck(event, treeId, treeNode) {
+            var treeObj = $.fn.zTree.getZTreeObj("DataTypeTree");
+            nodes=treeObj.getCheckedNodes(true);
+            var tmp="",id="";
+            for(var i=0;i<nodes.length;i++){
+                if(!nodes[i].isParent) {
+                    tmp += nodes[i].name + ",";
+                    id += nodes[i].id + ","
+                }
+            }
+            DataTypeId=id;
+            DataTypes=tmp;
+        };
+    })
+</script>
+</html>

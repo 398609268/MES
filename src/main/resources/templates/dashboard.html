@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" xml:th="http://www.thymeleaf.org" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台控制系统</title>
+    <link rel="stylesheet" type="text/css" href="layui/css/layui.css" th:href="@{/layui/css/layui.css}" />
+    <link rel="stylesheet" type="text/css" href="css/login.css" th:href="@{/css/login.css}"/>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo" >layui 后台布局</div>
+    </div>
+    <div class="layui-side layui-bg-black">
+        <div class="layui-side-scroll">
+            <div class="layui-side-scroll" id="navBarId">
+
+            </div>
+        </div>
+    </div>
+    <div class="layui-body">
+        <div class="layui-tab" lay-filter="tab"  lay-allowclose="true">
+            <ul class="layui-tab-title" style="width: 90%">
+                <li class="first-tab layui-this"><i class="layui-icon layui-icon-home"></i> <span>主页</span></li>
+            </ul>
+            <div class="layui-tab-content">
+                <div class="layui-tab-item layui-show">
+                    <iframe th:src="@{/index/main}" frameborder="0" name="content" width="100%" id="home"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!-- Jquery Js -->
+<script type="text/javascript" src="js/jquery.min.js" th:src="@{/js/jquery.min.js}"></script>
+<!-- Layui Js -->
+<script type="text/javascript" src="layui/layui.js" th:src="@{/layui/layui.js}"></script>
+<!-- Jqarticle Js -->
+<script type="text/javascript" src="js/jparticle.min.js" th:src="@{/js/jparticle.min.js}"></script>
+<!-- ZylVerificationCode Js-->
+<script type="text/javascript" src="js/zylVerificationCode.js" th:src="@{/js/zylVerificationCode.js}"></script>
+
+<script>
+    var layer=layui.layer;
+    var form=layui.form;
+
+        layui.use('element', function(){
+            var element = layui.element;
+            element.init();
+            FrameWH();
+            $.ajax({
+                url:"/sys/menu",
+                cache:false,
+                async:false,
+                type:"get",
+                dataType:"json",
+                success:function (res)
+                {
+                    console.log(res);
+                    if(res.data!=null)
+                    {
+                        var ulHtml='<ul class="layui-nav layui-nav-tree">'
+
+                        $.each(res.data,function(index,value)
+                        {
+                            ulHtml+='<li class="layui-nav-item">'+'<a href="javascript:;"'
+                            if(value.url!=null && value.url.length>0)
+                            {
+                                ulHtml+='data-url="'+value.url+'" data-id="'+value.id+'" data-title="'+value.menuName+'" class="menuNvaBar"';
+                            }
+
+                            ulHtml+='>'+value.menuName+'</a>'
+                            if(value.child!=null)
+                            {
+                                ulHtml+=getChild(value.child,"");
+                            }
+                            ulHtml+='</li>'
+                        });
+                        ulHtml+='</ul>';
+                        $("#navBarId").append(ulHtml);
+                        element.render('nav');
+                    }
+                }
+            })
+            $('.menuNvaBar').on('click',function ()
+            {
+                console.log("click")
+                var dataid=$(this);
+                if ($(".layui-tab-title li[lay-id]").length <= 0)
+                {
+                    active.tabAdd(dataid.attr("data-url"),dataid.attr("data-id"),dataid.attr("data-title"));
+                }
+                else
+                {
+                    var isData = false;
+                    $.each($(".layui-tab-title li[lay-id]"), function () {
+                        if ($(this).attr("lay-id") == dataid.attr("data-id")) {
+                            isData = true;
+                        }
+                    })
+                    if (isData == false)
+                    {
+                        active.tabAdd(dataid.attr("data-url"),dataid.attr("data-id"),dataid.attr("data-title"));
+                    }
+                }
+                active.tabChange(dataid.attr("data-id"));
+            });
+            var active={
+                tabAdd:function (url,id,title){
+                    element.tabAdd('tab',{
+                        title:title,
+                        content: '<iframe data-frameid="' + id + '" frameborder="0" name="content" width="100%" src="' + url +'" "'+ '></iframe>'
+                        ,
+                        id:id
+                    })
+                    FrameWH();
+                },
+                tabChange: function (id) {
+                    element.tabChange('tab', id); //切换到：用户管理
+                    $("iframe[data-frameid='" + id + "']").attr("src", $("iframe[data-frameid='" + id + "']").attr("src"))//切换后刷新框架
+                },
+                tabDelete: function (id) {
+                    element.tabDelete("tab", id);//删除
+                }
+            };
+            function getChild(item,ulHtml)
+            {
+                ulHtml+='<dl class="layui-nav-child">';
+                $.each(item,function (index,child){
+                    if(child!=null)
+                    {
+                        ulHtml+='<dd><a href="javascript:;"'
+                        if(child.url!=null && child.url.length>0)
+                        {
+                            ulHtml+='data-url="'+child.url+'" data-id="'+child.id+'" data-title="'+child.menuName+'" class="menuNvaBar"';
+
+                        }
+                        ulHtml+='">'+child.menuName+'</a></dd>';
+                    }
+                });
+                ulHtml+='</dl>'
+                return ulHtml;
+            };
+            function FrameWH() {
+                var h = $(window).height() - 41 - 10 - 35 - 10 - 44 - 10-40;
+                console.log(h);
+                $("iframe").css("height", h + "px");
+            };
+        });
+
+
+</script>
+</html>
